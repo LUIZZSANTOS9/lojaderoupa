@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrinho de Compras</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Carrinho de Compras</h1>
+
+    <div id="carrinhoVazio" class="alert">
+        <p>Seu carrinho está vazio!</p>
+    </div>
+
+    <div id="itensCarrinho" class="product-list">
+        <!-- Produtos serão inseridos aqui dinamicamente -->
+    </div>
+
+    <a href="inicial.html" class="btn">Voltar à Página Inicial</a>
+
+    <div id="totalContainer">
+        <h2>Total: R$ <span id="totalValor">0.00</span></h2>
+    </div>
+
+    <button id="finalizarCompra" class="btn" onclick="mostrarFormasPagamento()">Finalizar Compra</button>
+
+    <div id="formasPagamento" class="payment-methods" style="display: none;">
+        <h2>Formas de Pagamento</h2>
+        <button class="btn" onclick="mostrarFormularioCartao()">Cartão de Crédito</button>
+    </div>
+
+    <div id="formularioCartao" class="credit-card-form" style="display: none;">
+        <h3>Informações do Cartão de Crédito</h3>
+        <form>
+            <label for="numeroCartao">Número do Cartão:</label>
+            <input type="text" id="numeroCartao" name="numeroCartao" required>
+
+            <label for="nomeCartao">Nome no Cartão:</label>
+            <input type="text" id="nomeCartao" name="nomeCartao" required>
+
+            <label for="validadeCartao">Validade (MM/AA):</label>
+            <input type="text" id="validadeCartao" name="validadeCartao" required>
+
+            <label for="cvvCartao">CVV:</label>
+            <input type="text" id="cvvCartao" name="cvvCartao" required>
+
+            <button type="button" class="btn" onclick="validarFormularioCartao()">Finalizar Pagamento</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Função para calcular o valor total do carrinho
+function calcularTotal() {
+    let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+    let total = 0;
+
+    // Iterar pelos itens do carrinho e somar os preços
+    carrinho.forEach(item => {
+        // Converter o preço para número
+        let preco = parseFloat(item.preco);
+        if (!isNaN(preco)) {
+            total += preco;
+        }
+    });
+
+    // Atualizar o valor total na tela
+    document.getElementById('totalValor').innerText = total.toFixed(2);
+}
+
+// Função para exibir os itens no carrinho
+function exibirCarrinho() {
+    let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+    let itensCarrinho = document.getElementById('itensCarrinho');
+    let carrinhoVazio = document.getElementById('carrinhoVazio');
+
+    // Limpa os itens antigos
+    itensCarrinho.innerHTML = '';
+
+    if (carrinho.length === 0) {
+        // Exibe a mensagem se o carrinho estiver vazio
+        carrinhoVazio.style.display = 'block';
+        itensCarrinho.style.display = 'none';
+        document.getElementById('totalValor').innerText = '0.00';
+    } else {
+        // Esconde a mensagem de carrinho vazio
+        carrinhoVazio.style.display = 'none';
+        itensCarrinho.style.display = 'block';
+
+        // Exibe os produtos do carrinho
+        carrinho.forEach(item => {
+            let div = document.createElement('div');
+            div.classList.add('product-item');
+            div.innerHTML = `
+                <img src="${item.imagem}" alt="${item.nome}">
+                <h3>${item.nome}</h3>
+                <p>Preço: R$ ${parseFloat(item.preco).toFixed(2)}</p>
+                <p>Tamanho: ${item.tamanho}</p>
+                <button class="btn" onclick="removerItemCarrinho('${item.nome}', '${item.tamanho}')">Remover</button>
+            `;
+            itensCarrinho.appendChild(div);
+        });
+
+        // Atualiza o total
+        calcularTotal();
+    }
+}
+
+// Função para remover item do carrinho
+function removerItemCarrinho(nome, tamanho) {
+    let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+    carrinho = carrinho.filter(item => item.nome !== nome || item.tamanho !== tamanho);
+    localStorage.setItem('carrinho', JSON.stringify(carrinho));
+    exibirCarrinho();
+}
+
+// Função para mostrar as formas de pagamento
+function mostrarFormasPagamento() {
+    let formasPagamento = document.getElementById('formasPagamento');
+    formasPagamento.style.display = 'block';
+}
+
+// Função para mostrar o formulário do cartão de crédito
+function mostrarFormularioCartao() {
+    document.getElementById('formularioCartao').style.display = 'block';
+    document.getElementById('formasPagamento').style.display = 'none';
+}
+
+// Função para validar as informações do formulário do cartão de crédito
+function validarFormularioCartao() {
+    let numeroCartao = document.getElementById('numeroCartao').value;
+    let nomeCartao = document.getElementById('nomeCartao').value;
+    let validadeCartao = document.getElementById('validadeCartao').value;
+    let cvvCartao = document.getElementById('cvvCartao').value;
+
+    if (!numeroCartao || !nomeCartao || !validadeCartao || !cvvCartao) {
+        alert('Por favor, preencha todas as informações do cartão.');
+    } else {
+        finalizarCompra('cartao');
+    }
+}
+
+// Função para finalizar a compra
+function finalizarCompra(metodo) {
+    let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+
+    if (carrinho.length === 0) {
+        alert('Seu carrinho está vazio! Adicione itens antes de finalizar a compra.');
+    } else {
+        let mensagem = `Compra finalizada com sucesso usando ${metodo}! Total: R$ ${document.getElementById('totalValor').innerText}`;
+        alert(mensagem);
+        localStorage.removeItem('carrinho');
+        exibirCarrinho();
+        document.getElementById('formularioCartao').style.display = 'none';
+    }
+}
+
+// Exibe os itens do carrinho assim que a página carregar
+window.onload = function() {
+    exibirCarrinho();
+};
+</script>
+
+</body>
+</html>
